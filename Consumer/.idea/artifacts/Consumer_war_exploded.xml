@@ -1,0 +1,21 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-war" build-on-make="true" name="Consumer_war_exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/Consumer_war_exploded</output-path>
+    <root id="root">
+      <element id="javaee-facet-resources" facet="Consumer/web/Web" />
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="Consumer" />
+        </element>
+        <element id="directory" name="lib">
+          <element id="library" level="project" name="Maven: ch.qos.reload4j:reload4j:1.2.22" />
+          <element id="library" level="project" name="Maven: com.rabbitmq:amqp-client:4.0.2" />
+          <element id="library" level="project" name="Maven: org.slf4j:slf4j-api:2.0.7" />
+          <element id="library" level="project" name="Maven: org.slf4j:slf4j-reload4j:2.0.12" />
+          <element id="library" level="project" name="amqp-client-4.0.2" />
+          <element id="library" level="project" name="gson-2.10.1" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
