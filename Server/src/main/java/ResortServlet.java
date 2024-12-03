@@ -1,15 +1,14 @@
-import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.util.*;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
+import com.google.gson.JsonObject;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
 @WebServlet(value = "/resorts/*")
 public class ResortServlet extends HttpServlet {
-
   private DynamoDbClient dynamoDbClient;
   private static final String DYNAMODB_TABLE_NAME = "LiftRides";
 
