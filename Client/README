@@ -1,0 +1,12 @@
+Steps for execution of client 1:
+1. Uncomment the statement on line 17 in client 2 and change just the IP address
+2. Keep rest of the URL as it is
+3. Run the code
+4. For spring server, uncomment and add the IP address in line 18
+
+
+Steps for execution of client 2:
+1. Uncomment the statement on line 27 in client 2 and change just the IP address
+2. Keep rest of the URL as it is
+3. Run the code
+4. For spring server, uncomment and add the IP address in line 28
