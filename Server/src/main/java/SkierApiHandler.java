@@ -38,7 +38,7 @@ public class SkierApiHandler {
                         "LiftID", item.get("LiftID").n(),
                         "Time", item.get("Time").n()
                 ))
-                .orElseThrow(() -> new RuntimeException("No data found for the provided parameters"));
+                .orElseThrow(() -> new RuntimeException("No data found "));
     }
 
 }
