@@ -1,15 +1,20 @@
 import java.io.IOException;
 import java.io.BufferedReader;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletResponse;
+
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+
 
 @WebServlet(value = "/skiers/*")
 
@@ -18,6 +23,13 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
     private BlockingQueue<Channel> channelPool;
     private final static int POOL_SIZE = 20;
     private final static String QUEUE_NAME = "skiersQueue";
+    private final SkierApiHandler skierApiHandler;
+    private final Gson gson = new Gson();
+
+    public SkierServlet() {
+        this.skierApiHandler = new SkierApiHandler(DynamoDbClient.builder()
+                .build());
+    }
 
     @Override
     public void init() throws ServletException {
@@ -29,6 +41,7 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
             factory.setUsername("username");
             factory.setPassword("password");
             connection = factory.newConnection();
+
 
             channelPool = new ArrayBlockingQueue<>(POOL_SIZE);
             for (int i = 0; i < POOL_SIZE; i++) {
@@ -59,6 +72,7 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
             response.getWriter().write("{\"error\": \"Invalid URL format\"}");
             return;
         }
+
         try {
             BufferedReader reader = request.getReader();
             JsonObject jsonObject = JsonParser.parseReader(reader).getAsJsonObject();
@@ -117,7 +131,6 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
             for (Channel channel : channelPool) {
                 channel.close();
             }
-
             connection.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -138,7 +151,7 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
         if (seasonID == null || !seasonID.equals(2024)) {
             return "Invalid seasonID: must be 2024.";
         }
-        if (dayID == null || !dayID.equals(1)) {
+        if (dayID == null || dayID < 1 || dayID > 3) {
             return "Invalid dayID: must be 1.";
         }
         if (time == null || time < 1 || time > 360) {
@@ -163,12 +176,12 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
             int seasonID = Integer.parseInt(urlPath[3]);
             if (seasonID != 2024) return false;
 
-            if (!urlPath[4].equals("day")) return false;
+            if (!urlPath[4].equals("days")) return false;
 
             int dayID = Integer.parseInt(urlPath[5]);
-            if (dayID != 1) return false;
+            if (dayID < 1 || dayID > 3) return false;
 
-            if (!urlPath[6].equals("skier")) return false;
+            if (!urlPath[6].equals("skiers")) return false;
 
             int skierID = Integer.parseInt(urlPath[7]);
             if (skierID < 1 || skierID > 100000) return false;
@@ -183,10 +196,10 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
     protected void doGet(javax.servlet.http.HttpServletRequest request, javax.servlet.http.HttpServletResponse response) throws javax.servlet.ServletException, IOException {
         response.setContentType("text/plain");
         String urlPath = request.getPathInfo();
-
+        System.out.println("Received URL Path: " + urlPath);
         if (urlPath == null || urlPath.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            response.getWriter().write("missing paramterers");
+            response.getWriter().write("missing parameters");
             return;
         }
 
@@ -195,12 +208,34 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
         if (!isUrlValid(urlParts)) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             response.getWriter().write("Invalid URL format");
-        } else {
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().write("It works!");
         }
-    }
+        else {
+            try {
+
+                int resortID = Integer.parseInt(urlParts[1]);
+                int seasonID = Integer.parseInt(urlParts[3]);
+                int dayID = Integer.parseInt(urlParts[5]);
+                int skierID = Integer.parseInt(urlParts[7]);
+
+                Map<String, String> skierDetails = skierApiHandler.getSkierLiftRideDetails(resortID, seasonID, dayID, skierID);
+
+
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write(gson.toJson(skierDetails));
+            } catch (Exception e) {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
+            }
+        }
+
 
     }
+}
+
+
+
+
+
+
 
 
