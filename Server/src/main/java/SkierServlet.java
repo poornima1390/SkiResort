@@ -16,6 +16,7 @@ import com.rabbitmq.client.Channel;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 
+
 @WebServlet(value = "/skiers/*")
 
 public class SkierServlet extends javax.servlet.http.HttpServlet {
@@ -23,11 +24,16 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
     private BlockingQueue<Channel> channelPool;
     private final static int POOL_SIZE = 20;
     private final static String QUEUE_NAME = "skiersQueue";
+
     private final SkierApiHandler skierApiHandler;
+    private final VerticalApiHandler verticalApiHandler;
     private final Gson gson = new Gson();
+
 
     public SkierServlet() {
         this.skierApiHandler = new SkierApiHandler(DynamoDbClient.builder()
+                .build());
+        this.verticalApiHandler = new VerticalApiHandler(DynamoDbClient.builder()
                 .build());
     }
 
@@ -49,6 +55,7 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
                 channel.queueDeclare(QUEUE_NAME, true, false, false, null);
                 channelPool.offer(channel);
             }
+
         } catch (Exception e) {
             throw new ServletException("Error initializing RabbitMQ", e);
         }
@@ -204,12 +211,10 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
         }
 
         String[] urlParts = urlPath.split("/");
-
-        if (!isUrlValid(urlParts)) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            response.getWriter().write("Invalid URL format");
+        if (isGetSkierVertical(urlParts)) {
+            verticalApiHandler.handleGetSkierVertical(urlParts, response);
         }
-        else {
+        else if (isUrlValid(urlParts)) {
             try {
 
                 int resortID = Integer.parseInt(urlParts[1]);
@@ -226,10 +231,19 @@ public class SkierServlet extends javax.servlet.http.HttpServlet {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
             }
+
+        } else {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.getWriter().write("Invalid URL format");
         }
-
-
     }
+    private boolean isGetSkierVertical(String[] urlParts) {
+        return urlParts.length == 3 && urlParts[2].equals("vertical");
+    }
+
+
+
+
 }
 
 
