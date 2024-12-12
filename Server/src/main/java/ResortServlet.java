@@ -94,7 +94,7 @@ public class ResortServlet extends HttpServlet {
         return false;
 
       int dayID = Integer.parseInt(urlParts[5]);
-      if (dayID != 1)
+      if (dayID > 3 || dayID <1)
         return false;
 
       if (!urlParts[6].equals("skiers"))
