@@ -1,13 +1,11 @@
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
-import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 import java.util.Map;
 
 public class SkierApiHandler {
     private final DynamoDbClient dynamoDbClient;
-    private static final String DYNAMODB_TABLE_NAME = "LiftRides";
+    private static final String DYNAMODB_TABLE_NAME = "Lift_Rides";
 
     public SkierApiHandler(DynamoDbClient dynamoDbClient) {
         this.dynamoDbClient = DynamoDbClient.builder()
@@ -16,19 +14,21 @@ public class SkierApiHandler {
 
     public Map<String, String> getSkierLiftRideDetails(int resortID, int seasonID, int dayID, int skierID) {
 
-        ScanRequest scanRequest = ScanRequest.builder()
+        String sortKeyPrefix = seasonID + "-" + dayID;
+
+        QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(DYNAMODB_TABLE_NAME)
-                .filterExpression("ResortID = :resortID and SeasonID = :seasonID and DayID = :dayID and SkierID = :skierID")
+                .keyConditionExpression("SkierID = :skierID and begins_with(EntryDetail, :sortKeyPrefix)")
+                .filterExpression("ResortID = :resortID")
                 .expressionAttributeValues(Map.of(
-                        ":resortID", AttributeValue.builder().n(String.valueOf(resortID)).build(),
-                        ":seasonID", AttributeValue.builder().n(String.valueOf(seasonID)).build(),
-                        ":dayID", AttributeValue.builder().n(String.valueOf(dayID)).build(),
-                        ":skierID", AttributeValue.builder().n(String.valueOf(skierID)).build()
+                        ":skierID", AttributeValue.builder().n(String.valueOf(skierID)).build(),
+                        ":sortKeyPrefix", AttributeValue.builder().s(sortKeyPrefix).build(),
+                        ":resortID", AttributeValue.builder().n(String.valueOf(resortID)).build()
                 ))
                 .build();
 
+        QueryResponse res = dynamoDbClient.query(queryRequest);
 
-        ScanResponse res = dynamoDbClient.scan(scanRequest);
 
 
         return res.items().stream()
@@ -38,7 +38,7 @@ public class SkierApiHandler {
                         "LiftID", item.get("LiftID").n(),
                         "Time", item.get("Time").n()
                 ))
-                .orElseThrow(() -> new RuntimeException("No data found "));
+                .orElse(Map.of("message", "ID not found"));
     }
 
 }

@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.dynamodb.model.*;
 @WebServlet(value = "/resorts/*")
 public class ResortServlet extends HttpServlet {
   private DynamoDbClient dynamoDbClient;
-  private static final String DYNAMODB_TABLE_NAME = "LiftRides";
+  private static final String DYNAMODB_TABLE_NAME = "Lift_Rides";
 
   @Override
   public void init() throws ServletException {
@@ -110,39 +110,30 @@ public class ResortServlet extends HttpServlet {
   private int getUniqueSkiers(int resortID, int seasonID, int dayID)
       throws Exception {
 
+    // Use a Set to store unique SkierIDs
     Set<String> uniqueSkiers = new HashSet<>();
 
-    Map<String, AttributeValue> exclusiveStartKey = null;
+    // Build the query request
+    QueryRequest queryRequest = QueryRequest.builder()
+            .tableName(DYNAMODB_TABLE_NAME)
+            .indexName("ResortID-DayID-index") // GSI name
+            .keyConditionExpression("ResortID = :resortID AND DayID = :dayID")
+            .expressionAttributeValues(Map.of(
+                    ":resortID", AttributeValue.builder().n(String.valueOf(resortID)).build(),
+                    ":dayID", AttributeValue.builder().n(String.valueOf(dayID)).build()))
+            .projectionExpression("SkierID") // Retrieve only SkierID
+            .build();
 
-    do {
-      // Use Scan operation with filter expressions
-      ScanRequest scanRequest =
-          ScanRequest.builder()
-              .tableName(DYNAMODB_TABLE_NAME)
-              .filterExpression("ResortID = :resortId AND SeasonID = " +
-                                ":seasonId AND DayID = :dayId")
-              .expressionAttributeValues(Map.of(
-                  ":resortId",
-                  AttributeValue.builder().n(String.valueOf(resortID)).build(),
-                  ":seasonId",
-                  AttributeValue.builder().n(String.valueOf(seasonID)).build(),
-                  ":dayId",
-                  AttributeValue.builder().n(String.valueOf(dayID)).build()))
-              .projectionExpression("SkierID")
-              .exclusiveStartKey(exclusiveStartKey)
-              .build();
+    // Execute the query
+    QueryResponse queryResponse = dynamoDbClient.query(queryRequest);
 
-      ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
+    // Process the items in the response
+    for (Map<String, AttributeValue> item : queryResponse.items()) {
+      String skierID = item.get("SkierID").n();
+      uniqueSkiers.add(skierID); // Add SkierID to the set
+    }
 
-      for (Map<String, AttributeValue> item : scanResponse.items()) {
-        String skierID = item.get("SkierID").n();
-        uniqueSkiers.add(skierID);
-      }
-
-      exclusiveStartKey = scanResponse.lastEvaluatedKey();
-
-    } while (exclusiveStartKey != null && !exclusiveStartKey.isEmpty());
-
+    // Return the count of unique SkierIDs
     return uniqueSkiers.size();
   }
 

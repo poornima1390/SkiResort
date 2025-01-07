@@ -27,7 +27,7 @@ public class SkierLiftRideConsumer {
     private static final String USERNAME = "username";
     private static final String PASSWORD = "password";
 
-    private static final String DYNAMODB_TABLE_NAME = "LiftRides";
+    private static final String DYNAMODB_TABLE_NAME = "Lift_Rides";
     private static DynamoDbClient dynamoDbClient;
 
     public static void main(String[] args) {
@@ -101,6 +101,7 @@ public class SkierLiftRideConsumer {
         item.put("SeasonID", AttributeValue.builder().n(String.valueOf(seasonID)).build());
         item.put("DayID", AttributeValue.builder().n(String.valueOf(dayID)).build());
         item.put("Time", AttributeValue.builder().n(String.valueOf(time)).build());
+        item.put("EntryDetail",AttributeValue.builder().s(seasonID+"-"+dayID+"-"+time).build());
 
 
         PutItemRequest putItemRequest = PutItemRequest.builder()

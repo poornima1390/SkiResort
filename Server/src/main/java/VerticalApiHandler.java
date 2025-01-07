@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.Map;
 public class VerticalApiHandler {
     private final DynamoDbClient dynamoDbClient;
-    private static final String TABLE_NAME = "LiftRides";
+    private static final String TABLE_NAME = "Lift_Rides";
     private final static int VERTICAL_FACTOR = 10;
 
     public VerticalApiHandler(DynamoDbClient dynamoDbClient) {
